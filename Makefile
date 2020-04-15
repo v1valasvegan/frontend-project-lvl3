@@ -1,3 +1,6 @@
+start:
+	npx webpack-dev-server --open
+
 develop:
 	npx webpack-dev-server
 
