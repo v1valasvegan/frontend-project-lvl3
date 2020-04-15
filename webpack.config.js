@@ -9,7 +9,9 @@ module.exports = {
     filename: 'index_bundle.[contentHash].js',
   },
   plugins: [
-    new HtmlWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      template: './src/template.html',
+    }),
   ],
   module: {
     rules: [
