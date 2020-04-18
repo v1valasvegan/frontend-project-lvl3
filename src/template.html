@@ -6,14 +6,18 @@
   <title>RSS reader</title>
 </head>
 <body>
-  <div class="jumbotron">
-    <h1>RSS Reader</h1>
-    <p class="lead">Start readind RSS today. It is as easy as it gets.</p>
-    <p class="text-muted">https://ru.hexlet.io/lessons.rss</p>
-    <form action="" class="form-group form-inline">
-    <input type="text" class="form-control w-25" name="input" id="input">
-    <button type="submit" class="btn btn-primary ml-2">Add</button>
-  </form>
-  </div>
+  <main class="container">
+    <section class="jumbotron">
+      <h1>RSS Reader</h1>
+      <p class="lead">Start readind RSS today. It is as easy as it gets.</p>
+      <p class="text-muted">https://ru.hexlet.io/lessons.rss</p>
+      <form action="" class="form-group form-inline">
+      <input type="text" class="form-control w-25" name="input" placeholder="type RSS address here">
+      <button type="submit" class="btn btn-primary ml-2">Add</button>
+    </form>
+      <div class="feedback text-danger text-success"></div>
+  </section>
+  <section class="container feed-container"></section>
+  </main>
 </body>
 </html>
