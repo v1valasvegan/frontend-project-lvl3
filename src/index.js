@@ -1,7 +1,9 @@
 import { string, mixed } from 'yup';
 import axios from 'axios';
+import i18next from 'i18next';
 import parse from './parse';
 import render from './render';
+import resources from './locales/en';
 import './style.scss';
 
 const state = {
@@ -19,13 +21,13 @@ const handleChange = ({ target: { value } }) => {
   const rssUrls = state.rssItems.map(({ url }) => url);
   const duplicateSchema = mixed().notOneOf(rssUrls);
   if (!urlSchema.isValidSync(value) || value === '') {
-    state.error = 'Not a valid url';
+    state.error = i18next.t('errors.notValid');
     state.valid = false;
     return;
   }
 
   if (!duplicateSchema.isValidSync(value)) {
-    state.error = 'This url has already been added';
+    state.error = i18next.t('errors.duplicate');
     state.valid = false;
     return;
   }
@@ -50,7 +52,7 @@ const handleSubmit = (e) => {
     .then((newItem) => {
       const newRssItem = { ...newItem, url: rssUrl };
       state.rssItems = [...rssItems, newRssItem];
-      state.success = 'RSS has been added';
+      state.success = i18next.t('success');
     })
     .catch((err) => {
       state.error = err.message;
@@ -59,7 +61,11 @@ const handleSubmit = (e) => {
   state.valid = false;
   form.reset();
 };
+const app = async () => {
+  await i18next.init({ lng: 'en', debug: true, resources });
+  input.addEventListener('input', handleChange);
+  form.addEventListener('submit', handleSubmit);
+  render(state);
+};
 
-input.addEventListener('input', handleChange);
-form.addEventListener('submit', handleSubmit);
-render(state);
+app();
