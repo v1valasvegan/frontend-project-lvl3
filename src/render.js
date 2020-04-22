@@ -5,6 +5,7 @@ import { watch } from 'melanke-watchjs';
 const feedContainer = document.querySelector('.feed-container');
 const input = document.querySelector('.form-control');
 const feedbackContainer = document.querySelector('.feedback');
+const button = document.querySelector('.btn');
 
 const buildListItem = ({ text, link }) => {
   const li = document.createElement('li');
@@ -53,9 +54,18 @@ const toggleInputClassnames = (state) => {
   }
 };
 
+const toggleButtonAccessibility = (state) => {
+  if (state.valid) {
+    button.removeAttribute('disabled');
+    return;
+  }
+  button.setAttribute('disabled', true);
+};
+
 export default (state) => {
   watch(state, 'valid', () => {
     toggleInputClassnames(state);
+    toggleButtonAccessibility(state);
   });
 
   watch(state, 'error', () => {
