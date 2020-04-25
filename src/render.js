@@ -2,10 +2,6 @@ import { last } from 'lodash';
 import { watch } from 'melanke-watchjs';
 // import buildArticle from './buildArticle';
 
-const feedContainer = document.querySelector('.feed-container');
-const input = document.querySelector('.form-control');
-const feedbackContainer = document.querySelector('.feedback');
-const button = document.querySelector('.btn');
 
 const buildListItem = ({ text, link }) => {
   const li = document.createElement('li');
@@ -33,6 +29,8 @@ const buildArticle = (rss) => {
 
 
 const toggleInputClassnames = (state) => {
+  const feedbackContainer = document.querySelector('.feedback');
+  const input = document.querySelector('.form-control');
   const isInputValidated = input.classList.contains('is-valid') || input.classList.contains('is-invalid');
   if (!isInputValidated) {
     input.classList.add('is-invalid');
@@ -55,6 +53,8 @@ const toggleInputClassnames = (state) => {
 };
 
 const toggleButtonAccessibility = (state) => {
+  const button = document.querySelector('.btn');
+
   if (state.valid) {
     button.removeAttribute('disabled');
     return;
@@ -63,6 +63,9 @@ const toggleButtonAccessibility = (state) => {
 };
 
 export default (state) => {
+  const feedContainer = document.querySelector('.feed-container');
+  const feedbackContainer = document.querySelector('.feedback');
+
   watch(state, 'valid', () => {
     toggleInputClassnames(state);
     toggleButtonAccessibility(state);
