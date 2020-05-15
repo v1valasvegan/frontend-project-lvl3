@@ -1,6 +1,5 @@
 import { last } from 'lodash';
 import { watch } from 'melanke-watchjs';
-// import buildArticle from './buildArticle';
 
 
 const buildListItem = ({ text, link }) => {
@@ -31,8 +30,8 @@ const buildArticle = (rss) => {
 const toggleInputClassnames = (state) => {
   const feedbackContainer = document.querySelector('.feedback');
   const input = document.querySelector('.form-control');
-  const isInputValidated = input.classList.contains('is-valid') || input.classList.contains('is-invalid');
-  if (!isInputValidated) {
+  const isInputTouched = input.classList.contains('is-valid') || input.classList.contains('is-invalid');
+  if (!isInputTouched) {
     input.classList.add('is-invalid');
     input.classList.add('is-valid');
   }
