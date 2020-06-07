@@ -6,11 +6,11 @@ export default (data) => {
   const title = getTitle(doc);
   const description = doc.querySelector('description').textContent;
   const items = doc.querySelectorAll('item');
-  const rssLinks = [...items].map((i) => {
+  const posts = [...items].map((i) => {
     const link = i.querySelector('link').textContent;
     return { text: getTitle(i), link };
   });
   return {
-    title, description, rssLinks, error: null,
+    title, description, posts, error: null,
   };
 };

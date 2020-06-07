@@ -1,5 +1,6 @@
+/* eslint-disable no-param-reassign */
 import { string, object } from 'yup';
-import { uniqueId, noop } from 'lodash';
+import * as _ from 'lodash';
 import axios from 'axios';
 import i18next from 'i18next';
 import parse from './parse';
@@ -11,31 +12,36 @@ const routes = {
   corsApi: () => 'https://cors-anywhere.herokuapp.com',
 };
 
-const buildSchema = (rssUrls, errorMessages) => (
-  object().shape({
-    text: string()
-      .url(errorMessages.notValid)
-      .notOneOf(rssUrls, errorMessages.duplicate)
-      .required(errorMessages.notValid),
-  }));
+const buildSchema = (state, errorMessages) => {
+  const rssUrls = state.content.rssFeeds.map(({ url }) => url);
+  return object().shape({
+    form: object({
+      text: string()
+        .url(errorMessages.notValid)
+        .notOneOf(rssUrls, errorMessages.duplicate)
+        .required(errorMessages.notValid),
+    }),
+  });
+};
 
-const validate = (url, schema) => {
+const validate = (state, errorMessages) => {
   try {
-    schema.validateSync(url);
+    const schema = buildSchema(state, errorMessages);
+    schema.validateSync(state);
     return null;
   } catch (e) {
     return e.message;
   }
 };
 
-const updateValidationState = (state, schema) => {
-  const error = validate(state, schema);
+const updateValidationState = (state, errorMessages) => {
+  const error = validate(state, errorMessages);
   if (error === null) {
-    state.valid = true;
-    state.error = null;
+    state.form.valid = true;
+    state.form.errors.validation = null;
   } else {
-    state.valid = false;
-    state.error = error;
+    state.form.valid = false;
+    state.form.errors.validation = error;
   }
 };
 
@@ -50,60 +56,75 @@ const app = async () => {
   const input = document.querySelector('.form-control');
   const form = document.querySelector('.form-group');
   const state = {
-    text: '',
-    valid: null,
-    rssItems: [],
-    error: null,
-    success: null,
+    form: {
+      text: '',
+      processState: 'filling',
+      valid: null,
+      errors: {
+        process: null,
+        validation: null,
+      },
+    },
+    content: {
+      rssFeeds: [],
+      posts: [],
+    },
   };
 
   const handleChange = ({ target: { value } }) => {
-    const rssUrls = state.rssItems.map(({ url }) => url);
-    const schema = buildSchema(rssUrls, errorMessages);
-    state.text = value;
-    updateValidationState(state, schema);
+    state.form.text = value;
+    updateValidationState(state, errorMessages);
   };
 
   const addTimer = (item) => setTimeout(() => {
     const { url, id } = item;
+    const { content } = state;
     const processedUrl = `${routes.corsApi()}/${url}`;
     axios(processedUrl)
-      .then(({ data, status }) => ({ data, status }))
-      .then(({ data, status }) => {
-        if (status === 200) {
-          return parse(data);
-        }
-        throw new Error(`Request status ${status}`);
-      })
+      .then(({ data }) => parse(data))
       .then((parsed) => {
-        const updatedRssItems = state.rssItems.map((i) => (i.id === id ? { ...i, parsed } : i));
-        state.rssItems = updatedRssItems;
+        const updatedRssItems = content.rssItems.map((i) => (i.id === id ? { ...i, parsed } : i));
+        state.content.rssFeed = updatedRssItems;
       })
-      .catch(() => noop());
+      .catch((e) => {
+        throw new Error(e);
+      });
     addTimer(item);
   }, 20000);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { rssItems } = state;
+    console.log('herobora');
+    const { content: { rssFeeds, posts } } = state;
     const formData = new FormData(e.target);
     const rssUrl = formData.get('input');
-    const url = `${routes.corsApi()}/${rssUrl}`;
-    axios(url)
-      .then(({ data }) => data)
-      .then((data) => parse(data))
-      .then((parsed) => {
-        const newRssItem = { ...parsed, url: rssUrl, id: uniqueId() };
-        addTimer(newRssItem);
-        state.rssItems = [...rssItems, newRssItem];
-        state.success = i18next.t('success');
-      })
-      .catch((err) => {
-        state.error = err.message;
-      });
-
-    state.valid = false;
-    form.reset();
+    const url = [routes.corsApi(), rssUrl].join('/');
+    state.form.processState = 'requested';
+    try {
+      axios(url)
+        .then(({ data }) => data)
+        .then((data) => parse(data))
+        .then(({
+          title, description, posts: parsedPosts, error,
+        }) => {
+          if (error) {
+            throw new Error(`Parsing error: ${error}`);
+          }
+          const feedId = _.uniqueId();
+          const newFeed = {
+            title, description, url: rssUrl, id: feedId,
+          };
+          const newPosts = parsedPosts.map((post) => ({ ...post, feedId, id: _.uniqueId() }));
+          // addTimer(newFeed);
+          const updatedFeeds = [...rssFeeds, newFeed];
+          const updatedPosts = [...posts, ...newPosts];
+          state.content = { posts: updatedPosts, rssFeeds: updatedFeeds };
+        });
+      state.form.processState = 'finished';
+    } catch (err) {
+      state.form.error.process = err.message;
+      state.form.processState = 'failed';
+    }
   };
 
   input.addEventListener('input', handleChange);

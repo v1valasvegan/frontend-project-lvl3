@@ -9,6 +9,4 @@ globals:
 parserOptions:
   ecmaVersion: 2018
   sourceType: module
-rules: {
-  no-param-reassign: 0,
-}
+

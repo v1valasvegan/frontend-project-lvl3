@@ -1,8 +1,12 @@
-import { last } from 'lodash';
+import * as _ from 'lodash';
 import { watch } from 'melanke-watchjs';
 
+const hasErrors = (state) => {
+  const errors = Object.values(state.form.errors);
+  return errors.some((error) => error !== null);
+};
 
-const buildListItem = ({ text, link }) => {
+const buildPost = ({ text, link }) => {
   const li = document.createElement('li');
   const a = document.createElement('a');
   a.innerText = text;
@@ -11,12 +15,11 @@ const buildListItem = ({ text, link }) => {
   return li;
 };
 
-const buildArticle = (rss) => {
-  const { title, description, rssLinks } = rss;
+const buildArticle = (title, description, posts) => {
   const article = document.createElement('article');
   const ul = document.createElement('ul');
   ul.classList.add('list-unstyled');
-  const listItems = rssLinks.map(buildListItem);
+  const listItems = posts.map(buildPost);
   ul.append(...listItems);
   const h4 = document.createElement('h4');
   h4.innerText = title;
@@ -27,52 +30,81 @@ const buildArticle = (rss) => {
 };
 
 
-const toggleInputClassnames = (state) => {
-  const feedbackContainer = document.querySelector('.feedback');
-  const input = document.querySelector('.form-control');
-  const isInputTouched = input.classList.contains('is-valid') || input.classList.contains('is-invalid');
-  if (!isInputTouched) {
-    input.classList.add('is-invalid');
-    input.classList.add('is-valid');
-  }
+// const toggleInputClassnames = (state) => {
+//   const feedbackContainer = document.querySelector('.feedback');
+//   const input = document.querySelector('.form-control');
+//   const isInputTouched = input.classList.contains('is-valid') || input.classList.contains('is-invalid');
+//   if (!isInputTouched) {
+//     input.classList.add('is-invalid');
+//     input.classList.add('is-valid');
+//   }
 
-  if (state.valid) {
-    input.classList.replace('is-invalid', 'is-valid');
-  } else {
-    input.classList.replace('is-valid', 'is-invalid');
-  }
+//   if (state.form.valid) {
+//     input.classList.replace('is-invalid', 'is-valid');
+//   } else {
+//     input.classList.replace('is-valid', 'is-invalid');
+//   }
 
-  if (state.error) {
-    feedbackContainer.classList.replace('text-success', 'text-danger');
-  }
+//   if (state.error) {
+//     feedbackContainer.classList.replace('text-success', 'text-danger');
+//   }
 
-  if (state.success) {
-    feedbackContainer.classList.replace('text-danger', 'text-success');
-  }
-};
+//   if (state.success) {
+//     feedbackContainer.classList.replace('text-danger', 'text-success');
+//   }
+// };
 
-const toggleButtonAccessibility = (state) => {
+// const toggleButtonAccessibility = (state) => {
+//   const button = document.querySelector('.btn');
+
+//   if (state.valid) {
+//     button.removeAttribute('disabled');
+//     return;
+//   }
+//   button.setAttribute('disabled', true);
+// };
+
+const renderErrors = (state) => {
   const button = document.querySelector('.btn');
+  const feedBackContainer = document.querySelector('.feedback');
+  const input = document.querySelector('.form-control');
+  button.disabled = !state.valid;
 
-  if (state.valid) {
-    button.removeAttribute('disabled');
-    return;
+  if (state.form.valid) {
+    input.classList.remove('is-invalid');
   }
-  button.setAttribute('disabled', true);
+
+  if (!state.form.valid) {
+    input.classList.add('is-invalid');
+  }
+
+  if (hasErrors(state)) {
+    feedBackContainer.innerText = Object.values(state.form.errors).find((error) => error);
+  }
 };
+
+const renderNewFeed = (prevState, state) => {
+  const feedContainer = document.querySelector('.feed-container');
+  const newFeed = _.difference(state.content.rssFeeds, prevState.content.rssFeeds);
+  const article = buildArticle(newFeed);
+  feedContainer.append(article);
+};
+
+const updateFeed = (feed) => {
+};
+
 
 export default (state) => {
   const feedContainer = document.querySelector('.feed-container');
   const feedbackContainer = document.querySelector('.feedback');
 
-  watch(state, 'valid', () => {
-    toggleInputClassnames(state);
-    toggleButtonAccessibility(state);
+  watch(state, 'form', () => {
+    renderErrors(state);
   });
 
   watch(state, 'error', () => {
     feedbackContainer.innerText = state.error;
-    toggleInputClassnames(state);
+    // toggleInputClassnames(state);
   });
 
   watch(state, 'success', () => {
@@ -80,17 +112,26 @@ export default (state) => {
   });
 
 
-  watch(state, 'rssItems', (_prop, _action, newItems, oldItems) => {
-    if (newItems.length !== oldItems.length) {
-      const newItem = last(newItems);
-      const article = buildArticle(newItem);
-      feedContainer.append(article);
-      return;
-    }
-    feedContainer.innerHTML = '';
-    newItems.forEach((item) => {
-      const article = buildArticle(item);
-      feedContainer.append(article);
-    });
+  // watch(state, 'rssItems', (_prop, _action, newItems, oldItems) => {
+  //   if (newItems.length !== oldItems.length) {
+  //     const newItem = last(newItems);
+  //     const article = buildArticle(newItem);
+  //     feedContainer.append(article);
+  //     return;
+  //   }
+  //   feedContainer.innerHTML = '';
+  //   newItems.forEach((item) => {
+  //     const article = buildArticle(item);
+  //     feedContainer.append(article);
+  //   });
+  // });
+
+  watch(state, 'content', (_prop, _action, newContent, oldContent) => {
+    const { rssFeeds } = oldContent;
+    const { rssFeeds: newRssFeeds, posts } = newContent;
+    const [newFeed] = _.difference(newRssFeeds, rssFeeds);
+    const newPosts = posts.filter(({ feedId }) => feedId === newFeed.id);
+    const article = buildArticle(newFeed.title, newFeed.description, newPosts);
+    feedContainer.append(article);
   });
 };
