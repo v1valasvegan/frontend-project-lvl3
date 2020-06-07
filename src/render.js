@@ -66,12 +66,15 @@ const buildArticle = (title, description, posts) => {
 
 const renderErrors = (state) => {
   const button = document.querySelector('.btn');
-  const feedBackContainer = document.querySelector('.feedback');
+  const feedbackContainer = document.querySelector('.feedback');
   const input = document.querySelector('.form-control');
-  button.disabled = !state.valid;
+  button.disabled = !state.form.valid;
+  console.log(button.disabled);
+  console.log(state);
 
   if (state.form.valid) {
     input.classList.remove('is-invalid');
+    feedbackContainer.innerText = '';
   }
 
   if (!state.form.valid) {
@@ -79,18 +82,24 @@ const renderErrors = (state) => {
   }
 
   if (hasErrors(state)) {
-    feedBackContainer.innerText = Object.values(state.form.errors).find((error) => error);
+    feedbackContainer.innerText = Object.values(state.form.errors).find((error) => error);
   }
 };
 
-const renderNewFeed = (prevState, state) => {
-  const feedContainer = document.querySelector('.feed-container');
-  const newFeed = _.difference(state.content.rssFeeds, prevState.content.rssFeeds);
-  const article = buildArticle(newFeed);
-  feedContainer.append(article);
-};
+// const renderNewFeed = (prevState, state) => {
+//   const feedContainer = document.querySelector('.feed-container');
+//   const newFeed = _.difference(state.content.rssFeeds, prevState.content.rssFeeds);
+//   const article = buildArticle(newFeed);
+//   feedContainer.append(article);
+// };
 
 const updateFeed = (feed) => {
+  
+};
+
+const renderSuccessMessage = () => {
+  const feedbackContainer = document.querySelector('.feedback');
+  feedbackContainer.innerText = 'Feed added';
 };
 
 
@@ -104,7 +113,6 @@ export default (state) => {
 
   watch(state, 'error', () => {
     feedbackContainer.innerText = state.error;
-    // toggleInputClassnames(state);
   });
 
   watch(state, 'success', () => {
@@ -134,4 +142,6 @@ export default (state) => {
     const article = buildArticle(newFeed.title, newFeed.description, newPosts);
     feedContainer.append(article);
   });
+
+  watch(state.form, 'processState', renderSuccessMessage);
 };
