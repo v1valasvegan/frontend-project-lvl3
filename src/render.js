@@ -29,48 +29,11 @@ const buildArticle = (title, description, posts) => {
   return article;
 };
 
-
-// const toggleInputClassnames = (state) => {
-//   const feedbackContainer = document.querySelector('.feedback');
-//   const input = document.querySelector('.form-control');
-//   const isInputTouched = input.classList.contains('is-valid') || input.classList.contains('is-invalid');
-//   if (!isInputTouched) {
-//     input.classList.add('is-invalid');
-//     input.classList.add('is-valid');
-//   }
-
-//   if (state.form.valid) {
-//     input.classList.replace('is-invalid', 'is-valid');
-//   } else {
-//     input.classList.replace('is-valid', 'is-invalid');
-//   }
-
-//   if (state.error) {
-//     feedbackContainer.classList.replace('text-success', 'text-danger');
-//   }
-
-//   if (state.success) {
-//     feedbackContainer.classList.replace('text-danger', 'text-success');
-//   }
-// };
-
-// const toggleButtonAccessibility = (state) => {
-//   const button = document.querySelector('.btn');
-
-//   if (state.valid) {
-//     button.removeAttribute('disabled');
-//     return;
-//   }
-//   button.setAttribute('disabled', true);
-// };
-
 const renderErrors = (state) => {
   const button = document.querySelector('.btn');
   const feedbackContainer = document.querySelector('.feedback');
   const input = document.querySelector('.form-control');
   button.disabled = !state.form.valid;
-  console.log(button.disabled);
-  console.log(state);
 
   if (state.form.valid) {
     input.classList.remove('is-invalid');
@@ -86,17 +49,6 @@ const renderErrors = (state) => {
   }
 };
 
-// const renderNewFeed = (prevState, state) => {
-//   const feedContainer = document.querySelector('.feed-container');
-//   const newFeed = _.difference(state.content.rssFeeds, prevState.content.rssFeeds);
-//   const article = buildArticle(newFeed);
-//   feedContainer.append(article);
-// };
-
-const updateFeed = (feed) => {
-  
-};
-
 const renderSuccessMessage = () => {
   const feedbackContainer = document.querySelector('.feedback');
   feedbackContainer.innerText = 'Feed added';
@@ -106,6 +58,11 @@ const renderSuccessMessage = () => {
 export default (state) => {
   const feedContainer = document.querySelector('.feed-container');
   const feedbackContainer = document.querySelector('.feedback');
+
+  watch(state.form, 'text', () => {
+    const input = document.querySelector('.form-control');
+    input.value = state.form.text;
+  });
 
   watch(state, 'form', () => {
     renderErrors(state);
@@ -119,29 +76,35 @@ export default (state) => {
     feedbackContainer.innerText = state.success;
   });
 
+  watch(state, 'content', (_prop, _action, newContent, prevContent) => {
+    const { rssFeeds: prevRssFeeds } = prevContent;
+    const { rssFeeds, posts } = newContent;
+    const isNewFeedAdded = !_.isEqual(prevRssFeeds, rssFeeds);
 
-  // watch(state, 'rssItems', (_prop, _action, newItems, oldItems) => {
-  //   if (newItems.length !== oldItems.length) {
-  //     const newItem = last(newItems);
-  //     const article = buildArticle(newItem);
-  //     feedContainer.append(article);
-  //     return;
-  //   }
-  //   feedContainer.innerHTML = '';
-  //   newItems.forEach((item) => {
-  //     const article = buildArticle(item);
-  //     feedContainer.append(article);
-  //   });
-  // });
+    if (isNewFeedAdded) {
+      const [newFeed] = _.difference(rssFeeds, prevRssFeeds);
+      const newFeedsPosts = posts.filter(({ feedId }) => feedId === newFeed.id);
+      const article = buildArticle(newFeed.title, newFeed.description, newFeedsPosts);
+      article.setAttribute('data-id', newFeed.id);
+      feedContainer.append(article);
+      return;
+    }
 
-  watch(state, 'content', (_prop, _action, newContent, oldContent) => {
-    const { rssFeeds } = oldContent;
-    const { rssFeeds: newRssFeeds, posts } = newContent;
-    const [newFeed] = _.difference(newRssFeeds, rssFeeds);
-    const newPosts = posts.filter(({ feedId }) => feedId === newFeed.id);
-    const article = buildArticle(newFeed.title, newFeed.description, newPosts);
-    feedContainer.append(article);
+    const allUpdatedFeedsIds = _.difference(newContent, prevContent).map(({ feedId }) => feedId);
+    const updatedFeedsIds = _.uniq(allUpdatedFeedsIds);
+    updatedFeedsIds.forEach((id) => {
+      const currentFeed = state.content.rssFeeds.find(({ id: feedId }) => feedId === id);
+      const currentPosts = newContent.filter(({ feedId }) => feedId === id);
+      const article = buildArticle(currentFeed.title, currentFeed.description, currentPosts);
+      const updatedArticle = document.querySelector(`article[data-id='${id}']`);
+      updatedArticle.innerHTML = article.innerHTML;
+    });
   });
 
-  watch(state.form, 'processState', renderSuccessMessage);
+  watch(state.form, 'processState', () => {
+    const isLoaded = state.form.processState === 'finished';
+    if (isLoaded) {
+      renderSuccessMessage();
+    }
+  });
 };

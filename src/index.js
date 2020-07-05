@@ -76,25 +76,28 @@ const app = async () => {
     updateValidationState(state, errorMessages);
   };
 
-  const addTimer = (item) => setTimeout(() => {
-    const { url, id } = item;
-    const { content } = state;
+  const addTimer = (feed) => setTimeout(() => {
+    const { url } = feed;
+    const { content: { posts } } = state;
+    const postsFromUnchangedFeeds = posts.filter(({ feedId }) => feedId !== feed.id);
     const processedUrl = `${routes.corsApi()}/${url}`;
     axios(processedUrl)
       .then(({ data }) => parse(data))
-      .then((parsed) => {
-        const updatedRssItems = content.rssItems.map((i) => (i.id === id ? { ...i, parsed } : i));
-        state.content.rssFeed = updatedRssItems;
+      .then(({ posts: updatedPosts, error }) => {
+        if (error) {
+          throw new Error(`Parsing error: ${error}`);
+        }
+        const updatedPostsWithFeedId = updatedPosts.map((p) => ({ ...p, feedId: feed.id }));
+        state.content.posts = [...postsFromUnchangedFeeds, ...updatedPostsWithFeedId];
       })
       .catch((e) => {
         throw new Error(e);
       });
-    addTimer(item);
+    addTimer(feed);
   }, 20000);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('herobora');
     const { content: { rssFeeds, posts } } = state;
     const formData = new FormData(e.target);
     const rssUrl = formData.get('input');
@@ -115,12 +118,15 @@ const app = async () => {
             title, description, url: rssUrl, id: feedId,
           };
           const newPosts = parsedPosts.map((post) => ({ ...post, feedId, id: _.uniqueId() }));
-          // addTimer(newFeed);
+          addTimer(newFeed);
           const updatedFeeds = [...rssFeeds, newFeed];
           const updatedPosts = [...posts, ...newPosts];
           state.content = { posts: updatedPosts, rssFeeds: updatedFeeds };
+        })
+        .then(() => {
+          state.form.processState = 'finished';
+          state.form.text = '';
         });
-      state.form.processState = 'finished';
     } catch (err) {
       state.form.error.process = err.message;
       state.form.processState = 'failed';
