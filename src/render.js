@@ -1,10 +1,7 @@
 import * as _ from 'lodash';
 import { watch } from 'melanke-watchjs';
 
-const hasErrors = (state) => {
-  const errors = Object.values(state.form.errors);
-  return errors.some((error) => error !== null);
-};
+const hasErrors = ({ form: { error } }) => !_.isNull(error);
 
 const buildPost = ({ text, link }) => {
   const li = document.createElement('li');
@@ -45,7 +42,7 @@ const renderErrors = (state) => {
   }
 
   if (hasErrors(state)) {
-    feedbackContainer.innerText = Object.values(state.form.errors).find((error) => error);
+    feedbackContainer.innerText = state.form.error;
   }
 };
 
@@ -69,7 +66,7 @@ export default (state) => {
   });
 
   watch(state, 'error', () => {
-    feedbackContainer.innerText = state.error;
+    feedbackContainer.innerText = state.form.error;
   });
 
   watch(state, 'success', () => {

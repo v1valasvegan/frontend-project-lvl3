@@ -38,10 +38,10 @@ const updateValidationState = (state, errorMessages) => {
   const error = validate(state, errorMessages);
   if (error === null) {
     state.form.valid = true;
-    state.form.errors.validation = null;
+    state.form.error = null;
   } else {
     state.form.valid = false;
-    state.form.errors.validation = error;
+    state.form.error = error;
   }
 };
 
@@ -60,10 +60,7 @@ const app = async () => {
       text: '',
       processState: 'filling',
       valid: null,
-      errors: {
-        process: null,
-        validation: null,
-      },
+      error: null,
     },
     content: {
       rssFeeds: [],
@@ -128,7 +125,7 @@ const app = async () => {
           state.form.text = '';
         });
     } catch (err) {
-      state.form.error.process = err.message;
+      state.form.error = err.message;
       state.form.processState = 'failed';
     }
   };
