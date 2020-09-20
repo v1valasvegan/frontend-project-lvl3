@@ -8,8 +8,19 @@ import render from './render';
 import resources from './locales/en';
 import './style.scss';
 
+const interval = 10000;
+
 const routes = {
   corsApi: () => 'https://cors-anywhere.herokuapp.com',
+};
+
+const getLastPostId = (posts) => {
+  if (_.isEmpty(posts)) {
+    return 0;
+  }
+
+  const ids = posts.map(({ id }) => Number(id));
+  return Math.max(...ids);
 };
 
 const buildSchema = (state) => {
@@ -31,7 +42,7 @@ const buildSchema = (state) => {
 
 const validate = (state) => {
   try {
-    const schema = buildSchema(state, );
+    const schema = buildSchema(state);
     schema.validateSync(state);
     return null;
   } catch (e) {
@@ -46,8 +57,8 @@ const updateValidationState = (state) => {
     state.form.error = null;
     return;
   }
-    state.form.valid = false;
-    state.form.error = error;
+  state.form.valid = false;
+  state.form.error = error;
 };
 
 const app = async () => {
@@ -70,27 +81,33 @@ const app = async () => {
     content: {
       rssFeeds: [],
       posts: [],
+      lastPostId: 0,
     },
   };
 
   const handleChange = ({ target: { value } }) => {
     state.form.text = value;
+    state.form.processState = 'filling';
     updateValidationState(state, errorMessages);
   };
 
   const addTimer = (feed) => setTimeout(() => {
     const { url } = feed;
-    const { content: { posts } } = state;
-    const postsFromUnchangedFeeds = posts.filter(({ feedId }) => feedId !== feed.id);
+    const { content: { posts, lastPostId } } = state;
     const processedUrl = `${routes.corsApi()}/${url}`;
     axios(processedUrl)
       .then(({ data }) => parse(data))
-      .then(({ posts: updatedPosts }) => {
-        const updatedPostsWithFeedId = updatedPosts.map((p) => ({ ...p, feedId: feed.id }));
-        state.content.posts = [...postsFromUnchangedFeeds, ...updatedPostsWithFeedId];
+      .then(({ posts: currentFeedPosts }) => {
+        const newPosts = _.differenceBy(currentFeedPosts, posts, 'link');
+        if (_.isEmpty(newPosts)) {
+          return;
+        }
+        const newPostsWithIds = newPosts.map((p) => ({ ...p, feedId: feed.id, id: _.uniqueId() }));
+        state.content.posts = [...newPostsWithIds, ...posts];
+        state.content.lastPostId = _.isEmpty(newPosts) ? lastPostId : getLastPostId(posts);
       });
     addTimer(feed);
-  }, 20000);
+  }, interval);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -116,7 +133,10 @@ const app = async () => {
         addTimer(newFeed);
         const updatedFeeds = [...rssFeeds, newFeed];
         const updatedPosts = [...posts, ...newPosts];
-        state.content = { posts: updatedPosts, rssFeeds: updatedFeeds };
+        const lastPostId = getLastPostId(posts);
+        state.content.posts = updatedPosts;
+        state.content.rssFeeds = updatedFeeds;
+        state.content.lastPostId = lastPostId;
       })
       .then(() => {
         state.form.processState = 'finished';

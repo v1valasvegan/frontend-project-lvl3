@@ -1,107 +1,83 @@
 import * as _ from 'lodash';
 import { watch } from 'melanke-watchjs';
 
-const hasErrors = ({ form: { error } }) => !_.isNull(error);
-
-const buildPost = ({ text, link }) => {
-  const li = document.createElement('li');
-  const a = document.createElement('a');
-  a.innerText = text;
-  a.setAttribute('href', link);
-  li.append(a);
-  return li;
+const renderPosts = (posts, feedId) => {
+  const renderPost = ({ text, link }) => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.innerText = text;
+    a.setAttribute('href', link);
+    li.append(a);
+    return li;
+  };
+  const listItems = posts.map(renderPost);
+  const feed = document.getElementById(feedId);
+  feed.prepend(...listItems);
 };
 
-const buildArticle = (title, description, posts) => {
+const renderFeed = ({ title, description, id }) => {
   const article = document.createElement('article');
+  const feedContainer = document.querySelector('.feed-container');
   const ul = document.createElement('ul');
   ul.classList.add('list-unstyled');
-  const listItems = posts.map(buildPost);
-  ul.append(...listItems);
+  ul.setAttribute('id', id);
   const h4 = document.createElement('h4');
   h4.innerText = title;
   const p = document.createElement('p');
   p.innerText = description;
   article.append(h4, p, ul);
-  return article;
+  feedContainer.prepend(article);
 };
 
-const renderErrors = (state) => {
+
+const renderFeedback = (form) => {
   const button = document.querySelector('.btn');
   const feedbackContainer = document.querySelector('.feedback');
   const input = document.querySelector('.form-control');
-  button.disabled = !state.form.valid;
+  button.disabled = !form.valid;
 
-  if (state.form.valid) {
+  if (form.valid) {
     input.classList.remove('is-invalid');
     feedbackContainer.innerText = '';
   }
 
-  if (!state.form.valid) {
+  if (!form.valid) {
     input.classList.add('is-invalid');
   }
 
-  if (hasErrors(state)) {
-    feedbackContainer.innerText = state.form.error;
+  if (!_.isNull(form.error)) {
+    feedbackContainer.innerText = form.error;
+  }
+
+  if (form.processState === 'finished') {
+    feedbackContainer.innerText = 'Feed added';
   }
 };
 
-const renderSuccessMessage = () => {
-  const feedbackContainer = document.querySelector('.feedback');
-  feedbackContainer.innerText = 'Feed added';
-};
-
-
 export default (state) => {
-  const feedContainer = document.querySelector('.feed-container');
-  const feedbackContainer = document.querySelector('.feedback');
+  const { form, content } = state;
 
-  watch(state.form, 'text', () => {
+  watch(form, 'text', () => {
     const input = document.querySelector('.form-control');
-    input.value = state.form.text;
+    input.value = form.text;
   });
 
-  watch(state, 'form', () => {
-    renderErrors(state);
-  });
-
-  watch(state, 'error', () => {
-    feedbackContainer.innerText = state.form.error;
-  });
-
-  watch(state, 'success', () => {
-    feedbackContainer.innerText = state.success;
-  });
-
-  watch(state, 'content', (_prop, _action, newContent, prevContent) => {
-    const { rssFeeds: prevRssFeeds } = prevContent;
-    const { rssFeeds, posts } = newContent;
-    const isNewFeedAdded = !_.isEqual(prevRssFeeds, rssFeeds);
-
-    if (isNewFeedAdded) {
-      const [newFeed] = _.difference(rssFeeds, prevRssFeeds);
-      const newFeedsPosts = posts.filter(({ feedId }) => feedId === newFeed.id);
-      const article = buildArticle(newFeed.title, newFeed.description, newFeedsPosts);
-      article.setAttribute('data-id', newFeed.id);
-      feedContainer.append(article);
-      return;
+  watch(content, 'posts', () => {
+    const { posts, lastPostId, rssFeeds } = content;
+    const newPosts = posts.filter(({ id }) => Number(id) > Number(lastPostId));
+    const oldPosts = _.difference(posts, newPosts);
+    const updatedFeedId = newPosts[0].feedId;
+    const hasNewFeed = !oldPosts.some(({ feedId }) => feedId === updatedFeedId);
+    if (hasNewFeed) {
+      const newFeed = _.last(rssFeeds);
+      renderFeed(newFeed);
+      const input = document.querySelector('.form-control');
+      input.focus();
     }
-
-    const allUpdatedFeedsIds = _.difference(newContent, prevContent).map(({ feedId }) => feedId);
-    const updatedFeedsIds = _.uniq(allUpdatedFeedsIds);
-    updatedFeedsIds.forEach((id) => {
-      const currentFeed = state.content.rssFeeds.find(({ id: feedId }) => feedId === id);
-      const currentPosts = newContent.filter(({ feedId }) => feedId === id);
-      const article = buildArticle(currentFeed.title, currentFeed.description, currentPosts);
-      const updatedArticle = document.querySelector(`article[data-id='${id}']`);
-      updatedArticle.innerHTML = article.innerHTML;
-    });
+    renderPosts(newPosts, updatedFeedId);
   });
 
-  watch(state.form, 'processState', () => {
-    const isLoaded = state.form.processState === 'finished';
-    if (isLoaded) {
-      renderSuccessMessage();
-    }
+  watch(form, ['processState', 'error'], () => {
+    renderFeedback(form);
   });
 };
