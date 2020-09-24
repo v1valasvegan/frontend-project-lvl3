@@ -19,7 +19,7 @@ const getLastPostId = (posts) => {
     return 0;
   }
 
-  const ids = posts.map(({ id }) => Number(id));
+  const ids = posts.map(({ id }) => id);
   return Math.max(...ids);
 };
 
