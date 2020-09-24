@@ -54,11 +54,6 @@ const renderFeedback = (form) => {
 export default (state) => {
   const { form, content } = state;
 
-  watch(form, 'text', () => {
-    const input = document.querySelector('.form-control');
-    input.value = form.text;
-  });
-
   watch(content, 'posts', () => {
     const { posts, lastPostId, rssFeeds } = content;
     const newPosts = posts.filter(({ id }) => Number(id) > Number(lastPostId));
