@@ -23,13 +23,13 @@ const getLastPostId = (posts) => {
   return Math.max(...ids);
 };
 
-const buildSchema = (state) => {
+const buildSchema = (content) => {
   const errorMessages = {
     notValid: i18next.t('errors.notValid'),
     duplicate: i18next.t('errors.duplicate'),
   };
 
-  const rssUrls = state.content.rssFeeds.map(({ url }) => url);
+  const rssUrls = content.rssFeeds.map(({ url }) => url);
   return object().shape({
     form: object({
       text: string()
@@ -42,7 +42,7 @@ const buildSchema = (state) => {
 
 const validate = (state) => {
   try {
-    const schema = buildSchema(state);
+    const schema = buildSchema(state.content);
     schema.validateSync(state);
     return null;
   } catch (e) {
