@@ -43,9 +43,6 @@ const renderFeedback = (form) => {
 
   if (!form.valid) {
     input.classList.add('is-invalid');
-  }
-
-  if (!_.isNull(form.error)) {
     feedbackContainer.innerText = form.error;
   }
 
