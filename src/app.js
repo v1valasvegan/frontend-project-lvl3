@@ -10,7 +10,7 @@ import './style.scss';
 
 const interval = 10000;
 
-const routes = {
+const apiUrl = {
   corsApi: () => 'https://cors-anywhere.herokuapp.com',
 };
 
@@ -94,7 +94,7 @@ const app = async () => {
   const addTimer = (feed) => setTimeout(() => {
     const { url } = feed;
     const { content: { posts, lastPostId } } = state;
-    const processedUrl = `${routes.corsApi()}/${url}`;
+    const processedUrl = `${apiUrl.corsApi()}/${url}`;
     axios(processedUrl)
       .then(({ data }) => parse(data))
       .then(({ posts: currentFeedPosts }) => {
@@ -114,17 +114,14 @@ const app = async () => {
     const { content: { rssFeeds, posts } } = state;
     const formData = new FormData(e.target);
     const rssUrl = formData.get('input');
-    const url = [routes.corsApi(), rssUrl].join('/');
+    const url = [apiUrl.corsApi(), rssUrl].join('/');
     state.form.processState = 'requested';
     axios(url)
       .then(({ data }) => data)
       .then((data) => parse(data))
       .then(({
-        title, description, posts: parsedPosts, error,
+        title, description, posts: parsedPosts,
       }) => {
-        if (error) {
-          throw new Error(`Parsing error: ${error}`);
-        }
         const feedId = _.uniqueId();
         const newFeed = {
           title, description, url: rssUrl, id: feedId,
