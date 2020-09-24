@@ -14,7 +14,7 @@ export default (data) => {
     return {
       title, description, posts, error: null,
     };
-  } catch (e) {
-    throw new Error(e);
+  } catch (error) {
+    return { error };
   }
 };

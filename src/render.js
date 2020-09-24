@@ -49,6 +49,10 @@ const renderFeedback = (form) => {
   if (form.processState === 'finished') {
     feedbackContainer.innerText = 'Feed added';
   }
+
+  if (form.processState === 'failed') {
+    feedbackContainer.innerText = form.error;
+  }
 };
 
 export default (state) => {
