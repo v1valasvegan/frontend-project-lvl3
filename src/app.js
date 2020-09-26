@@ -23,13 +23,13 @@ const getLastPostId = (posts) => {
   return Math.max(...ids);
 };
 
-const buildSchema = (content) => {
+const buildSchema = (rssFeeds) => {
   const errorMessages = {
     notValid: i18next.t('errors.notValid'),
     duplicate: i18next.t('errors.duplicate'),
   };
 
-  const rssUrls = content.rssFeeds.map(({ url }) => url);
+  const rssUrls = rssFeeds.map(({ url }) => url);
   return object().shape({
     form: object({
       text: string()
@@ -42,7 +42,7 @@ const buildSchema = (content) => {
 
 const validate = (state) => {
   try {
-    const schema = buildSchema(state.content);
+    const schema = buildSchema(state.content.rssFeeds);
     schema.validateSync(state);
     return null;
   } catch (e) {
@@ -111,7 +111,6 @@ const app = async () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { content: { rssFeeds, posts } } = state;
     const formData = new FormData(e.target);
     const rssUrl = formData.get('input');
     const url = [apiUrl.corsApi(), rssUrl].join('/');
@@ -128,12 +127,9 @@ const app = async () => {
         };
         const newPosts = parsedPosts.map((post) => ({ ...post, feedId, id: _.uniqueId() }));
         addTimer(newFeed);
-        const updatedFeeds = [...rssFeeds, newFeed];
-        const updatedPosts = [...posts, ...newPosts];
-        const lastPostId = getLastPostId(posts);
-        state.content.posts = updatedPosts;
-        state.content.rssFeeds = updatedFeeds;
-        state.content.lastPostId = lastPostId;
+        state.content.lastPostId = getLastPostId(state.content.posts);
+        state.content.posts.push(...newPosts);
+        state.content.rssFeeds.push(newFeed);
       })
       .then(() => {
         state.form.processState = 'finished';
