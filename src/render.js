@@ -29,6 +29,16 @@ const renderFeed = ({ title, description, id }) => {
   feedContainer.prepend(article);
 };
 
+const setButtonAccessibility = (processState) => {
+  const button = document.querySelector('.btn');
+  if (processState === 'requested') {
+    button.disabled = true;
+    return;
+  }
+
+  button.disabled = false;
+};
+
 
 const renderFeedback = (form) => {
   const button = document.querySelector('.btn');
@@ -75,5 +85,6 @@ export default (state) => {
 
   watch(form, ['processState', 'error'], () => {
     renderFeedback(form);
+    setButtonAccessibility(form.processState);
   });
 };
