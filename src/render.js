@@ -29,22 +29,16 @@ const renderFeed = ({ title, description, id }) => {
   feedContainer.prepend(article);
 };
 
-const setButtonAccessibility = (processState) => {
+const setButtonAccessibility = (form) => {
   const button = document.querySelector('.btn');
-  if (processState === 'requested') {
-    button.disabled = true;
-    return;
-  }
-
-  button.disabled = false;
+  const disabled = form.processState === 'requested' || form.text === '' || !form.valid;
+  button.disabled = disabled;
 };
 
 
 const renderFeedback = (form) => {
-  const button = document.querySelector('.btn');
   const feedbackContainer = document.querySelector('.feedback');
   const input = document.querySelector('.form-control');
-  button.disabled = !form.valid;
 
   if (form.valid) {
     input.classList.remove('is-invalid');
@@ -77,14 +71,15 @@ export default (state) => {
     if (hasNewFeed) {
       const newFeed = _.last(rssFeeds);
       renderFeed(newFeed);
-      const input = document.querySelector('.form-control');
-      input.focus();
+      const formElement = document.querySelector('.form-group');
+      formElement.reset();
+      formElement.focus();
     }
     renderPosts(newPosts, updatedFeedId);
   });
 
   watch(form, ['processState', 'error'], () => {
+    setButtonAccessibility(form);
     renderFeedback(form);
-    setButtonAccessibility(form.processState);
   });
 };
