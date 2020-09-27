@@ -32,7 +32,16 @@ const renderFeed = ({ title, description, id }) => {
 const setButtonAccessibility = (form) => {
   const button = document.querySelector('.btn');
   const disabled = form.processState === 'requested' || form.text === '' || !form.valid;
+<<<<<<< HEAD
   button.disabled = disabled;
+=======
+  if (disabled) {
+    button.disabled = true;
+    return;
+  }
+
+  button.disabled = false;
+>>>>>>> 8a2c2680133bf92d8db2c2c7ac6b409ca7868871
 };
 
 
