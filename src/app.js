@@ -33,9 +33,9 @@ const buildSchema = (rssFeeds) => {
   return object().shape({
     form: object({
       text: string()
+        .required()
         .url(errorMessages.notValid)
-        .notOneOf(rssUrls, errorMessages.duplicate)
-        .required(errorMessages.notValid),
+        .notOneOf(rssUrls, errorMessages.duplicate),
     }),
   });
 };
@@ -74,7 +74,7 @@ const app = async () => {
   const state = {
     form: {
       text: '',
-      processState: 'filling',
+      processState: 'empty',
       valid: null,
       error: null,
     },
@@ -87,7 +87,7 @@ const app = async () => {
 
   const handleChange = ({ target: { value } }) => {
     state.form.text = value;
-    state.form.processState = 'filling';
+    state.form.processState = value === '' ? 'empty' : 'filling';
     updateValidationState(state, errorMessages);
   };
 
@@ -130,10 +130,7 @@ const app = async () => {
         state.content.lastPostId = getLastPostId(state.content.posts);
         state.content.posts.push(...newPosts);
         state.content.rssFeeds.push(newFeed);
-      })
-      .then(() => {
         state.form.processState = 'finished';
-        state.form.text = '';
       })
       .catch((err) => {
         state.form.error = err.message;

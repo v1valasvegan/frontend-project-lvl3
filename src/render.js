@@ -31,7 +31,7 @@ const renderFeed = ({ title, description, id }) => {
 
 const setButtonAccessibility = (form) => {
   const button = document.querySelector('.btn');
-  const disabled = form.processState === 'requested' || form.text === '' || !form.valid;
+  const disabled = form.processState !== 'filling' || !form.valid;
   button.disabled = disabled;
 };
 
@@ -40,23 +40,23 @@ const renderFeedback = (form) => {
   const feedbackContainer = document.querySelector('.feedback');
   const input = document.querySelector('.form-control');
 
-  if (form.valid) {
-    input.classList.remove('is-invalid');
-    feedbackContainer.innerText = '';
-  }
-
-  if (!form.valid) {
+  if (!form.valid && form.processState !== 'empty') {
     input.classList.add('is-invalid');
-    feedbackContainer.innerText = form.error;
+  } else {
+    input.classList.remove('is-invalid');
   }
 
   if (form.processState === 'finished') {
     feedbackContainer.innerText = 'Feed added';
+    return;
   }
 
-  if (form.processState === 'failed') {
-    feedbackContainer.innerText = form.error;
+  if (form.valid || form.processState === 'empty') {
+    feedbackContainer.innerText = '';
+    return;
   }
+
+  feedbackContainer.innerText = form.error;
 };
 
 export default (state) => {
@@ -78,7 +78,7 @@ export default (state) => {
     renderPosts(newPosts, updatedFeedId);
   });
 
-  watch(form, ['processState', 'error'], () => {
+  watch(form, ['processState', 'valid'], () => {
     setButtonAccessibility(form);
     renderFeedback(form);
   });
